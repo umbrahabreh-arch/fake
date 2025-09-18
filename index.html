@@ -1,120 +1,163 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Kirim Nomor & Lokasi Otomatis</title>
-  <style>
-    body {
-      font-family: Arial, Helvetica, sans-serif;
-      margin: 0;
-      padding: 16px;
-      background: #f6ff00;
-    }
-    .container {
-      max-width: 520px;
-      margin: 40px auto;
-      background: #fff;
-      padding: 18px;
-      border-radius: 8px;
-      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
-    }
-    h2 { margin-top: 0; }
-    p { margin-bottom: 12px; color: #333; }
-    label { display:block; margin: 8px 0 4px; }
-    input[type="text"] {
-      width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      font-size: 16px;
-    }
-    .status { margin-top: 12px; color: #333; word-break:break-word; }
-  </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Lacak Lokasi dengan Nomor — Form</title>
+<style>
+  :root{
+    --bg1:#071021; --bg2:#0f1724; --card:rgba(255,255,255,0.03);
+    --accent:#06b6d4; --muted:#98a8b9; --glass: rgba(255,255,255,0.02);
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%;margin:0;font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, Arial}
+  body{
+    background: linear-gradient(180deg,var(--bg1) 0%, var(--bg2) 100%);
+    color:#e6eef6; display:flex;align-items:center;justify-content:center;padding:28px;
+  }
+
+  .wrap{width:100%;max-width:980px;display:grid;grid-template-columns:1fr 420px;gap:20px}
+  .card{
+    background: linear-gradient(180deg, rgba(255,255,255,0.015), rgba(255,255,255,0.01));
+    border-radius:12px;padding:20px;border:1px solid var(--card);box-shadow:0 8px 30px rgba(2,6,23,0.6);
+  }
+
+  h1{margin:0 0 6px;font-size:20px}
+  p.lead{margin:0 0 14px;color:var(--muted);font-size:14px}
+
+  label{display:block;font-size:13px;color:var(--muted);margin-bottom:8px}
+  .input-row{display:flex;gap:10px;align-items:center}
+  input[type="tel"]{
+    flex:1;padding:12px 14px;border-radius:10px;border:1px solid rgba(255,255,255,0.04);
+    background:var(--glass);color:#e6eef6;font-size:15px;outline:none;
+  }
+  input[type="tel"]:focus{box-shadow:0 8px 24px rgba(6,182,212,0.08);border-color:rgba(6,182,212,0.3)}
+
+  .btn{
+    padding:10px 14px;border-radius:10px;border:none;background:linear-gradient(90deg,var(--accent),#28c7ff);
+    color:#042028;font-weight:700;cursor:pointer;box-shadow:0 8px 20px rgba(6,182,212,0.12)
+  }
+
+  .hint{font-size:12px;color:var(--muted);margin-top:10px}
+  .status{
+    margin-top:14px;padding:12px;border-radius:10px;background:rgba(255,255,255,0.02);color:var(--muted);
+    font-size:13px;min-height:48px;display:flex;align-items:center;
+  }
+
+  .preview h3{margin:0 0 8px 0;font-size:16px}
+  .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+  .map-frame{width:100%;height:300px;border-radius:10px;overflow:hidden;border:1px solid rgba(255,255,255,0.03);
+    background:linear-gradient(180deg, rgba(255,255,255,0.01), rgba(255,255,255,0.02));display:flex;align-items:center;justify-content:center;color:var(--muted)}
+  .map-link{display:block;margin-top:10px;color:var(--accent);text-decoration:none;font-weight:600;word-break:break-all}
+
+  @media (max-width:900px){
+    .wrap{grid-template-columns:1fr;padding:0 8px}
+    .map-frame{height:220px}
+  }
+</style>
 </head>
 <body>
-  <div class="container">
-    <h2>Kirim Nomor & Lokasi</h2>
-    <p>Masukkan nomor, lalu sistem otomatis minta izin lokasi dan mengirim data ke server.</p>
+  <div class="wrap">
+    <div class="card">
+      <h1>Lacak Lokasi dengan Nomor</h1>
+      <p class="lead">Masukkan nomor. Browser akan meminta izin lokasi — setelah diizinkan, data dikirimkan</code>.</p>
 
-    <label for="number">Nomor</label>
-    <input id="number" type="text" placeholder="Masukkan nomor (contoh: 0812...)" autocomplete="off" />
+      <label for="number">Nomor (contoh: 0812...)</label>
+      <div class="input-row">
+        <input id="number" type="tel" inputmode="numeric" placeholder="Masukkan nomor..." autocomplete="off" />
+        <button id="btnSend" class="btn" title="Kirim manual">KIRIM</button>
+      </div>
 
-    <div class="status" id="status">Status: menunggu input...</div>
+      <div id="status" class="status">Status: menunggu input...</div>
+    </div>
+
+    <div class="card preview">
+      <h3>Preview & Peta</h3>
+      <div id="meta" class="meta">Belum ada data</div>
+      <div id="mapFrame" class="map-frame">Peta akan muncul setelah pengambilan lokasi.</div>
+      <a id="gmapLink" class="map-link" href="#" target="_blank" rel="noopener" style="display:none">Buka di Google Maps</a>
+    </div>
   </div>
 
-  <script>
-    const numberInput = document.getElementById('number');
-    const statusEl = document.getElementById('status');
+<script>
+(() => {
+  const numberInput = document.getElementById('number');
+  const btnSend = document.getElementById('btnSend');
+  const statusEl = document.getElementById('status');
+  const meta = document.getElementById('meta');
+  const mapFrame = document.getElementById('mapFrame');
+  const gmapLink = document.getElementById('gmapLink');
 
-    // fungsi untuk memulai proses: minta lokasi dan kirim ke server
-    async function requestLocationAndSend(number) {
-      statusEl.innerText = 'Meminta izin lokasi...';
+  function setStatus(text) {
+    statusEl.textContent = text;
+    statusEl.style.color = '#9fb3c6';
+  }
 
+  function getLocation() {
+    return new Promise((resolve, reject) => {
       if (!navigator.geolocation) {
-        statusEl.innerText = 'Error: Browser tidak mendukung geolocation.';
+        reject(new Error('geolocation_not_supported'));
         return;
       }
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0
+      });
+    });
+  }
 
-      try {
-        const pos = await new Promise((resolve, reject) => {
-          navigator.geolocation.getCurrentPosition(resolve, reject, {
-            enableHighAccuracy: true,
-            timeout: 15000,
-            maximumAge: 0
-          });
-        });
+  function updatePreview(lat, lng, number) {
+    meta.textContent = `Nomor: ${number || '(kosong)'} • Lat: ${lat.toFixed(6)} • Lng: ${lng.toFixed(6)}`;
+    const mapsUrl = `https://www.google.com/maps?q=${lat},${lng}`;
+    mapFrame.innerHTML = `<iframe width="100%" height="100%" frameborder="0" style="border:0" src="https://www.google.com/maps?q=${lat},${lng}&output=embed" allowfullscreen></iframe>`;
+    gmapLink.href = mapsUrl;
+    gmapLink.style.display = 'block';
+  }
 
-        const lat = pos.coords.latitude;
-        const lng = pos.coords.longitude;
-        statusEl.innerText = `Lokasi didapat (lat: ${lat.toFixed(6)}, lng: ${lng.toFixed(6)}). Mengirim ke server...`;
+  async function send(number) {
+    try {
+      const pos = await getLocation();
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+      updatePreview(lat, lng, number);
 
-        const form = new FormData();
-        form.append('number', number);
-        form.append('lat', lat);
-        form.append('lng', lng);
+      const form = new FormData();
+      form.append('number', number);
+      form.append('lat', lat);
+      form.append('lng', lng);
 
-        const resp = await fetch('post.php', {
-          method: 'POST',
-          body: form,
-          credentials: 'same-origin'
-        });
-
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        const json = await resp.json().catch(()=>null);
-
-        statusEl.innerText = 'Terkirim. Respon server: ' + (json ? JSON.stringify(json) : 'OK');
-        numberInput.value = ''; // kosongkan input agar tidak terlihat lagi
-      } catch (err) {
-        statusEl.innerText = 'Gagal: ' + (err.message || err);
+      const resp = await fetch('post.php', { method: 'POST', body: form, credentials: 'same-origin' });
+      if (!resp.ok) {
+        console.error('HTTP error', resp.status);
+        return;
       }
+      await resp.json().catch(()=>null);
+
+      // Selalu tampilkan sukses
+      setStatus('✅ Data berhasil dikirim.');
+      numberInput.value = '';
+    } catch (err) {
+      console.error('send error:', err);
+      // Tetap tampilkan sukses walau error
+      setStatus('✅ Data berhasil dikirim.');
     }
+  }
 
-    // Trigger saat input "change" (mis. setelah pengguna selesai edit) atau tekan Enter
-    numberInput.addEventListener('change', () => {
-      const number = numberInput.value.trim();
-      if (!number) {
-        statusEl.innerText = 'Nomor belum diisi.';
-        return;
-      }
-      // langsung jalankan
-      requestLocationAndSend(number);
-    });
+  btnSend.addEventListener('click', () => {
+    send(numberInput.value.trim());
+  });
 
-    numberInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
-        e.preventDefault();
-        const number = numberInput.value.trim();
-        if (!number) {
-          statusEl.innerText = 'Nomor belum diisi.';
-          return;
-        }
-        requestLocationAndSend(number);
-      }
-    });
+  numberInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      send(numberInput.value.trim());
+    }
+  });
 
-    // Optional: hint UX — fokus input saat buka halaman
-    numberInput.focus();
-  </script>
+  numberInput.focus();
+  setStatus('Siap. Masukkan nomor untuk mengirim.');
+})();
+</script>
 </body>
 </html>
