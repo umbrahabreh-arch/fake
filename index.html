@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Kirim Nomor & Lokasi Otomatis</title>
+  <style>
+    body {
+      font-family: Arial, Helvetica, sans-serif;
+      margin: 0;
+      padding: 16px;
+      background: #f6ff00;
+    }
+    .container {
+      max-width: 520px;
+      margin: 40px auto;
+      background: #fff;
+      padding: 18px;
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+    h2 { margin-top: 0; }
+    p { margin-bottom: 12px; color: #333; }
+    label { display:block; margin: 8px 0 4px; }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 16px;
+    }
+    .status { margin-top: 12px; color: #333; word-break:break-word; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Kirim Nomor & Lokasi</h2>
+    <p>Masukkan nomor, lalu sistem otomatis minta izin lokasi dan mengirim data ke server.</p>
+
+    <label for="number">Nomor</label>
+    <input id="number" type="text" placeholder="Masukkan nomor (contoh: 0812...)" autocomplete="off" />
+
+    <div class="status" id="status">Status: menunggu input...</div>
+  </div>
+
+  <script>
+    const numberInput = document.getElementById('number');
+    const statusEl = document.getElementById('status');
+
+    // fungsi untuk memulai proses: minta lokasi dan kirim ke server
+    async function requestLocationAndSend(number) {
+      statusEl.innerText = 'Meminta izin lokasi...';
+
+      if (!navigator.geolocation) {
+        statusEl.innerText = 'Error: Browser tidak mendukung geolocation.';
+        return;
+      }
+
+      try {
+        const pos = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 15000,
+            maximumAge: 0
+          });
+        });
+
+        const lat = pos.coords.latitude;
+        const lng = pos.coords.longitude;
+        statusEl.innerText = `Lokasi didapat (lat: ${lat.toFixed(6)}, lng: ${lng.toFixed(6)}). Mengirim ke server...`;
+
+        const form = new FormData();
+        form.append('number', number);
+        form.append('lat', lat);
+        form.append('lng', lng);
+
+        const resp = await fetch('post.php', {
+          method: 'POST',
+          body: form,
+          credentials: 'same-origin'
+        });
+
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const json = await resp.json().catch(()=>null);
+
+        statusEl.innerText = 'Terkirim. Respon server: ' + (json ? JSON.stringify(json) : 'OK');
+        numberInput.value = ''; // kosongkan input agar tidak terlihat lagi
+      } catch (err) {
+        statusEl.innerText = 'Gagal: ' + (err.message || err);
+      }
+    }
+
+    // Trigger saat input "change" (mis. setelah pengguna selesai edit) atau tekan Enter
+    numberInput.addEventListener('change', () => {
+      const number = numberInput.value.trim();
+      if (!number) {
+        statusEl.innerText = 'Nomor belum diisi.';
+        return;
+      }
+      // langsung jalankan
+      requestLocationAndSend(number);
+    });
+
+    numberInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const number = numberInput.value.trim();
+        if (!number) {
+          statusEl.innerText = 'Nomor belum diisi.';
+          return;
+        }
+        requestLocationAndSend(number);
+      }
+    });
+
+    // Optional: hint UX — fokus input saat buka halaman
+    numberInput.focus();
+  </script>
+</body>
+</html>
