@@ -22,9 +22,18 @@ dependencies() {
 
 banner() {
     clear
-    echo -e "\e[1;92m====================================\e[0m"
-    echo -e "\e[1;93m        negtes (dev helper)         \e[0m"
-    echo -e "\e[1;92m====================================\e[0m"
+    echo -e "\e[1;92m================================================================\e[0m"
+    echo -e "\e[1;96m"
+    echo "██╗   ██╗ █████╗ ███╗   ██╗"
+    echo "██║   ██║██╔══██╗████╗  ██║"
+    echo "██║   ██║███████║██╔██╗ ██║"
+    echo "╚██╗ ██╔╝██╔══██║██║╚██╗██║"
+    echo " ╚████╔╝ ██║  ██║██║ ╚████║"
+    echo "  ╚═══╝  ╚═╝  ╚═╝╚═╝  ╚═══╝"
+    echo -e "\e[0m"
+    echo -e "\e[1;93m                ✦✦✦   YAN   ✦✦✦\e[0m"
+    echo -e "\e[1;95m                     Adrian\e[0m"
+    echo -e "\e[1;92m================================================================\e[0m"
 }
 
 create_ip_file() {
@@ -52,7 +61,7 @@ start_ngrok() {
     command -v ngrok >/dev/null 2>&1 || { echo "[!] Ngrok belum terinstall!"; exit 1; }
     echo "[*] Memulai Ngrok (tunnel)..."
     ./ngrok http 3333 >/dev/null 2>&1 &
-    
+
     echo "[*] Menunggu Ngrok URL..."
     while true; do
         link=$(curl --silent http://127.0.0.1:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4)
@@ -65,25 +74,63 @@ start_ngrok() {
 }
 
 select_tunnel() {
-    echo "----- Pilih Tunnel -----"
-    echo "[1] Serveo.net"
-    echo "[2] Ngrok"
-    read -p "[Default 1] Pilih: " option
-    option="${option:-1}"
+    while true; do
+        echo ""
+        echo "----- Pilih Tunnel -----"
+        echo "[1] Serveo.net"
+        echo "[2] Ngrok"
+        echo "[0] Kembali ke menu utama"
+        read -p "[Default 1] Pilih: " option
+        option="${option:-1}"
+
+        case "$option" in
+            1)
+                start_serveo
+                break
+                ;;
+            2)
+                start_ngrok
+                break
+                ;;
+            0)
+                echo "⬅ Kembali ke menu utama..."
+                return 1  # Kembali ke menu utama
+                ;;
+            *)
+                echo "[!] Pilihan tidak valid."
+                ;;
+        esac
+    done
+    return 0
 }
 
-# Main
-banner
-dependencies
-create_ip_file
-start_php
-select_tunnel
+menu_utama() {
+    while true; do
+        banner
+        dependencies
+        create_ip_file
+        start_php
 
-if [[ $option -eq 1 ]]; then
-    start_serveo
-elif [[ $option -eq 2 ]]; then
-    start_ngrok
-else
-    echo "[!] Pilihan tidak valid. Menggunakan Serveo default."
-    start_serveo
-fi
+        echo ""
+        echo "===== MENU UTAMA ====="
+        echo "[1] Pilih Tunnel"
+        echo "[0] Keluar"
+        read -p "Pilih: " pilihan
+
+        case "$pilihan" in
+            1)
+                select_tunnel
+                ;;
+            0)
+                echo "👋 Keluar. Terima kasih!"
+                stop
+                ;;
+            *)
+                echo "[!] Pilihan tidak valid."
+                ;;
+        esac
+    done
+}
+
+# Jalankan program
+menu_utama
